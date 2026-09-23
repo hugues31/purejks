@@ -1,13 +1,30 @@
-pyjks
-=====
+purejks
+=======
 
-<a href="https://pyjks.readthedocs.io/en/latest/"><img src="https://img.shields.io/badge/docs-latest-brightgreen.svg?style=flat"></a>
-<a href="https://pypi.python.org/pypi/pyjks"><img src="https://img.shields.io/pypi/v/pyjks.svg"></a>
-<a href="http://calver.org"><img src="https://img.shields.io/badge/calver-YY.MINOR.MICRO-22bfda.svg"></a>
-<a href="https://github.com/kurtbrose/pyjks/blob/master/CHANGELOG.md"><img src="https://img.shields.io/badge/CHANGELOG-UPDATED-b84ad6.svg"></a>
+[![PyPI](https://img.shields.io/pypi/v/purejks.svg)](https://pypi.org/project/purejks/)
+[![CI](https://github.com/hugues31/purejks/actions/workflows/ci.yml/badge.svg)](https://github.com/hugues31/purejks/actions/workflows/ci.yml)
 
-A pure python Java KeyStore file parser, including private/secret key decryption.
+A pure-Python Java KeyStore file parser, including private/secret key decryption.
 Can read JKS, JCEKS, BKS and UBER (BouncyCastle) key stores.
+
+**purejks is a fork of [pyjks](https://github.com/kurtbrose/pyjks)** that installs
+without a C compiler. pyjks depends on the [`twofish`](https://pypi.org/project/twofish/)
+package, which is only published as a source distribution containing a C extension:
+installing pyjks therefore requires `cc`, which is often missing from slim Docker images
+and CI runners. Moreover, that package uses the `imp` module, removed in Python 3.12, so
+reading UBER keystores with pyjks fails on recent Pythons.
+
+purejks replaces it with a bundled, pure-Python Twofish implementation (derived from
+[K-Czaplicki/TwoFish](https://github.com/K-Czaplicki/TwoFish) and optimized), and ships
+as a universal `py3-none-any` wheel. All other dependencies provide wheels or are pure Python.
+
+The import name is unchanged (`import jks`), so purejks is a drop-in replacement:
+uninstall `pyjks` and install `purejks` (do not install both, they provide the same module).
+
+```console
+pip uninstall pyjks
+pip install purejks
+```
 
 The best way to utilize a certificate stored in a jks file up to this point has been
 to use the java keytool command to transform to pkcs12, and then openssl to transform to pem.
@@ -15,21 +32,35 @@ to use the java keytool command to transform to pkcs12, and then openssl to tran
 This is better:
  -  no security concerns in passwords going into command line arguments, or unencrypted files being left around
  -  no dependency on a JVM
+ -  no compiler needed to install it
 
 ## Requirements:
 
- * Python 2.6+ or Python 3.3+
+ * Python 3.9+
  * pyasn1 0.3.5+
- * pyasn1_modules 0.0.8+
- * javaobj-py3 0.1.4+
- * pycryptodomex, if you need to read JCEKS, BKS or UBER keystores
- * twofish, if you need to read UBER keystores
+ * pyasn1_modules
+ * javaobj-py3
+ * pycryptodomex
+
+## Development
+
+The project uses [uv](https://docs.astral.sh/uv/), [ruff](https://docs.astral.sh/ruff/)
+and [ty](https://docs.astral.sh/ty/):
+
+```console
+uv sync
+uv run pytest
+uv run ruff check . && uv run ruff format --check .
+uv run ty check
+```
+
+Releases are published to PyPI by GitHub Actions (trusted publishing) when a
+GitHub release is published; the tag must match the version in `pyproject.toml` (`v1.0.0`).
 
 ## Usage examples:
 
 Reading a JKS or JCEKS keystore and dumping out its contents in the PEM format:
 ```python
-from __future__ import print_function
 import sys, base64, textwrap
 import jks
 
@@ -63,7 +94,7 @@ for alias, sk in ks.secret_keys.items():
     print("  Algorithm: %s" % sk.algorithm)
     print("  Key size: %d bits" % sk.key_size)
     print("  Key: %s" % "".join("{:02x}".format(b) for b in bytearray(sk.key)))
-	print()
+    print()
 ```
 
 
@@ -73,6 +104,7 @@ import OpenSSL
 import jks
 
 _ASN1 = OpenSSL.crypto.FILETYPE_ASN1
+
 
 def jksfile2context(jks_file, passphrase, key_alias, key_password=None):
     keystore = jks.KeyStore.load(jks_file, passphrase)
@@ -88,10 +120,9 @@ def jksfile2context(jks_file, passphrase, key_alias, key_password=None):
     ctx = OpenSSL.SSL.Context(OpenSSL.SSL.TLSv1_METHOD)
     ctx.use_privatekey(pkey)
     ctx.use_certificate(public_cert)
-    ctx.check_privatekey() # want to know ASAP if there is a problem
+    ctx.check_privatekey()  # want to know ASAP if there is a problem
     cert_store = ctx.get_cert_store()
     for cert in trusted_certs:
         cert_store.add_cert(cert)
     return ctx
-
 ```

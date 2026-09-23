@@ -1,0 +1,74 @@
+[project]
+name = "purejks"
+version = "1.0.0"
+description = "Pure-Python Java KeyStore (JKS, JCEKS, BKS, UBER) library, with no compiled dependencies. Fork of pyjks."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+    { name = "Kurt Rose" },
+    { name = "Jeroen De Ridder" },
+]
+maintainers = [{ name = "Hugues Gaillard" }]
+keywords = ["jks", "jceks", "bks", "uber", "java", "keystore", "security", "ssl"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Topic :: Security :: Cryptography",
+    "Topic :: Software Development :: Libraries",
+]
+requires-python = ">=3.9"
+dependencies = [
+    "pyasn1>=0.3.5",
+    "pyasn1-modules",
+    "javaobj-py3",
+    "pycryptodomex",
+]
+
+[project.urls]
+Homepage = "https://github.com/hugues31/purejks"
+Source = "https://github.com/hugues31/purejks"
+Changelog = "https://github.com/hugues31/purejks/blob/main/CHANGELOG.md"
+Upstream = "https://github.com/kurtbrose/pyjks"
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "ruff>=0.16",
+    "ty>=0.0.83",
+]
+
+[build-system]
+requires = ["uv_build>=0.11,<0.12"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "jks"
+module-root = ""
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["--doctest-modules", "--import-mode=importlib"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py39"
+extend-exclude = ["docs/conf.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.ty.environment]
+python-version = "3.9"

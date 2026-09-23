@@ -1,4 +1,26 @@
-# PyJKS CHANGELOG
+# purejks CHANGELOG
+
+purejks is a fork of PyJKS; entries below v1.0.0 are from the upstream project.
+purejks uses [semantic versioning](https://semver.org).
+
+v1.0.0
+------
+*(unreleased)*
+
+First release of the purejks fork, based on PyJKS master (20.0.1dev).
+
+* Replaced the C-based `twofish` dependency with a bundled pure-Python
+  implementation (`jks._twofish`), so installing no longer requires a C
+  compiler; the package is a universal `py3-none-any` wheel.
+* Fixed reading UBER keystores on Python 3.12+ (the `twofish` package
+  relied on the removed `imp` module).
+* Dropped Python 2 and Python < 3.9 support.
+* Packaging moved to `pyproject.toml` (uv), linting/formatting with ruff,
+  type checking with ty, CI and PyPI publishing with GitHub Actions.
+* Fixed `NameError`s in BKS error paths (undefined `e` and `tag`
+  when reporting a malformed entry).
+
+# PyJKS CHANGELOG (upstream)
 
 Broadly speaking, the PyJKS has been stable since 2017. The JKS
 formats themselves do not change rapidly, either. The original author

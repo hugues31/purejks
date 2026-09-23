@@ -1,0 +1,36 @@
+name: Publish
+
+# A published GitHub release (tag vX.Y.Z) publishes to PyPI.
+# A manual run publishes to TestPyPI.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    needs: ci
+    runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'release' && 'pypi' || 'testpypi' }}
+    permissions:
+      id-token: write  # trusted publishing
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check that the tag matches the package version
+        if: github.event_name == 'release'
+        run: |
+          version=$(grep -m1 '^version = ' pyproject.toml | cut -d'"' -f2)
+          test "${GITHUB_REF_NAME}" = "v${version}" || { echo "Tag ${GITHUB_REF_NAME} != v${version}"; exit 1; }
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: ${{ github.event_name == 'release' && 'https://upload.pypi.org/legacy/' || 'https://test.pypi.org/legacy/' }}

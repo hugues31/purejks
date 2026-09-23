@@ -56,8 +56,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'PyJKS'
-copyright = u'2017, Kurt Rose and contributors'
+project = u'purejks'
+copyright = u'2017, Kurt Rose and contributors; 2026, purejks contributors'
 author = u'Kurt Rose and contributors'
 
 # The version info for the project you're documenting, acts as replacement for

@@ -3,8 +3,15 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-PyJKS
-=====
+purejks
+=======
+
+.. note::
+
+   purejks is a fork of `PyJKS <https://github.com/kurtbrose/pyjks>`_ that
+   bundles a pure-Python Twofish implementation, so it installs without a C
+   compiler. The import name (``jks``) and the API are unchanged; the rest of
+   this documentation refers to the library by its original name.
 
 PyJKS is *the* pure-Python library for Java KeyStore (JKS) parsing,
 decryption, and manipulation. PyJKS supports vanilla JKS, JCEKS, BKS,

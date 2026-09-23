@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+      - run: uv sync --locked
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run ty check
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14", "pypy3.11"]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+        with:
+          python-version: ${{ matrix.python }}
+      - run: uv sync --locked
+      - run: uv run pytest
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+      - run: uv build
+      - name: Check that the wheel is pure Python
+        run: ls dist/*-py3-none-any.whl
+      - name: Install in an image without a C compiler and read an UBER keystore
+        run: |
+          docker run --rm -v "$PWD:/src" -w /src python:3.13-slim sh -c '
+            ! command -v cc && ! command -v gcc &&
+            pip install --no-cache-dir dist/*.whl &&
+            python -c "import jks; ks = jks.bks.UberKeyStore.load(\"tests/keystores/uber/christmas.uber\", \"12345678\"); assert ks.entries; print(jks.__version__, sorted(ks.entries))"
+          '
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist/

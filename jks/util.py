@@ -1,29 +1,53 @@
 # vim: set et ai ts=4 sts=4 sw=4:
-from __future__ import print_function
-import textwrap
 import base64
 import struct
+import textwrap
+from typing import Any
 
-b8 = struct.Struct('>Q')
-b4 = struct.Struct('>L') # unsigned
-b2 = struct.Struct('>H')
-b1 = struct.Struct('B') # unsigned
+b8 = struct.Struct(">Q")
+b4 = struct.Struct(">L")  # unsigned
+b2 = struct.Struct(">H")
+b1 = struct.Struct("B")  # unsigned
 
-py23basestring = ("".__class__, u"".__class__) # useful for isinstance checks
+py23basestring = (str,)  # kept for backward compatibility with pyjks; prefer isinstance(x, str)
 
-RSA_ENCRYPTION_OID = (1,2,840,113549,1,1,1)
-DSA_OID            = (1,2,840,10040,4,1)       # identifier for DSA public/private keys; see RFC 3279, section 2.2.2 (e.g. in PKCS#8 PrivateKeyInfo or X.509 SubjectPublicKeyInfo)
-DSA_WITH_SHA1_OID  = (1,2,840,10040,4,3)       # identifier for the DSA signature algorithm; see RFC 3279, section 2.3.2 (e.g. in X.509 signatures)
+RSA_ENCRYPTION_OID = (1, 2, 840, 113549, 1, 1, 1)
+DSA_OID = (
+    1,
+    2,
+    840,
+    10040,
+    4,
+    1,
+)  # identifier for DSA public/private keys; see RFC 3279, section 2.2.2 (e.g. in PKCS#8 PrivateKeyInfo or X.509 SubjectPublicKeyInfo)
+DSA_WITH_SHA1_OID = (
+    1,
+    2,
+    840,
+    10040,
+    4,
+    3,
+)  # identifier for the DSA signature algorithm; see RFC 3279, section 2.3.2 (e.g. in X.509 signatures)
+
 
 class KeystoreException(Exception):
     """Superclass for all pyjks exceptions."""
+
     pass
+
+
 class KeystoreSignatureException(KeystoreException):
     """Signifies that the supplied password for a keystore integrity check is incorrect."""
+
     pass
+
+
 class DuplicateAliasException(KeystoreException):
     """Signifies that duplicate aliases were encountered in a keystore."""
+
     pass
+
+
 class NotYetDecryptedException(KeystoreException):
     """
     Signifies that an attribute of a key store entry can not be accessed because the entry has not yet been decrypted.
@@ -33,51 +57,99 @@ class NotYetDecryptedException(KeystoreException):
 
     To resolve, first call decrypt() with the correct password on the entry object whose attributes you want to access.
     """
-    pass
-class BadKeystoreFormatException(KeystoreException):
-    """Signifies that a structural error was encountered during key store parsing."""
-    pass
-class BadDataLengthException(KeystoreException):
-    """Signifies that given input data was of wrong or unexpected length."""
-    pass
-class BadPaddingException(KeystoreException):
-    """Signifies that bad padding was encountered during decryption."""
-    pass
-class BadHashCheckException(KeystoreException):
-    """Signifies that a hash computation did not match an expected value."""
-    pass
-class DecryptionFailureException(KeystoreException):
-    """Signifies failure to decrypt a value."""
-    pass
-class UnsupportedKeystoreVersionException(KeystoreException):
-    """Signifies an unexpected or unsupported keystore format version."""
-    pass
-class UnexpectedJavaTypeException(KeystoreException):
-    """Signifies that a serialized Java object of unexpected type was encountered."""
-    pass
-class UnexpectedAlgorithmException(KeystoreException):
-    """Signifies that an unexpected cryptographic algorithm was used in a keystore."""
-    pass
-class UnexpectedKeyEncodingException(KeystoreException):
-    """Signifies that a key was stored in an unexpected format or encoding."""
-    pass
-class UnsupportedKeystoreTypeException(KeystoreException):
-    """Signifies that the keystore was an unsupported type."""
-    pass
-class UnsupportedKeystoreEntryTypeException(KeystoreException):
-    """Signifies that the keystore entry was an unsupported type."""
-    pass
-class UnsupportedKeyFormatException(KeystoreException):
-    """Signifies that the key format was an unsupported type."""
+
     pass
 
-class AbstractKeystore(object):
+
+class BadKeystoreFormatException(KeystoreException):
+    """Signifies that a structural error was encountered during key store parsing."""
+
+    pass
+
+
+class BadDataLengthException(KeystoreException):
+    """Signifies that given input data was of wrong or unexpected length."""
+
+    pass
+
+
+class BadPaddingException(KeystoreException):
+    """Signifies that bad padding was encountered during decryption."""
+
+    pass
+
+
+class BadHashCheckException(KeystoreException):
+    """Signifies that a hash computation did not match an expected value."""
+
+    pass
+
+
+class DecryptionFailureException(KeystoreException):
+    """Signifies failure to decrypt a value."""
+
+    pass
+
+
+class UnsupportedKeystoreVersionException(KeystoreException):
+    """Signifies an unexpected or unsupported keystore format version."""
+
+    pass
+
+
+class UnexpectedJavaTypeException(KeystoreException):
+    """Signifies that a serialized Java object of unexpected type was encountered."""
+
+    pass
+
+
+class UnexpectedAlgorithmException(KeystoreException):
+    """Signifies that an unexpected cryptographic algorithm was used in a keystore."""
+
+    pass
+
+
+class UnexpectedKeyEncodingException(KeystoreException):
+    """Signifies that a key was stored in an unexpected format or encoding."""
+
+    pass
+
+
+class UnsupportedKeystoreTypeException(KeystoreException):
+    """Signifies that the keystore was an unsupported type."""
+
+    pass
+
+
+class UnsupportedKeystoreEntryTypeException(KeystoreException):
+    """Signifies that the keystore entry was an unsupported type."""
+
+    pass
+
+
+class UnsupportedKeyFormatException(KeystoreException):
+    """Signifies that the key format was an unsupported type."""
+
+    pass
+
+
+class AbstractKeystore:
     """
     Abstract superclass for keystores.
     """
+
     def __init__(self, store_type, entries):
         self.store_type = store_type  #: A string indicating the type of keystore that was loaded.
         self.entries = dict(entries)  #: A dictionary of all entries in the keystore, mapped by alias.
+
+    @classmethod
+    def loads(cls, data, store_password, try_decrypt_keys=True):
+        """Loads a keystore from a byte string. Implemented by concrete keystore classes."""
+        raise NotImplementedError("Abstract method")
+
+    def saves(self, store_password):
+        """Serializes the keystore to a byte string. Implemented by concrete keystore classes."""
+        raise NotImplementedError("Abstract method")
 
     @classmethod
     def load(cls, filename, store_password, try_decrypt_keys=True):
@@ -85,19 +157,17 @@ class AbstractKeystore(object):
         Convenience wrapper function; reads the contents of the given file
         and passes it through to :func:`loads`. See :func:`loads`.
         """
-        with open(filename, 'rb') as file:
+        with open(filename, "rb") as file:
             input_bytes = file.read()
-            ret = cls.loads(input_bytes,
-                            store_password,
-                            try_decrypt_keys=try_decrypt_keys)
+            ret = cls.loads(input_bytes, store_password, try_decrypt_keys=try_decrypt_keys)
         return ret
 
     def save(self, filename, store_password):
         """
-        Convenience wrapper function; calls the :func:`saves` 
+        Convenience wrapper function; calls the :func:`saves`
         and saves the content to a file.
         """
-        with open(filename, 'wb') as file:
+        with open(filename, "wb") as file:
             keystore_bytes = self.saves(store_password)
             file.write(keystore_bytes)
 
@@ -110,20 +180,23 @@ class AbstractKeystore(object):
         size = b2.unpack_from(data, pos)[0]
         pos += 2
         try:
-            return data[pos:pos+size].decode('utf-8'), pos+size
+            return data[pos : pos + size].decode("utf-8"), pos + size
         except (UnicodeEncodeError, UnicodeDecodeError) as e:
-            raise BadKeystoreFormatException(("Failed to read %s, contains bad UTF-8 data: %s" % (kind, str(e))) if kind else \
-                                             ("Encountered bad UTF-8 data: %s" % str(e)))
+            raise BadKeystoreFormatException(
+                (f"Failed to read {kind}, contains bad UTF-8 data: {str(e)}")
+                if kind
+                else (f"Encountered bad UTF-8 data: {str(e)}")
+            ) from e
 
     @classmethod
     def _read_data(cls, data, pos):
         size = b4.unpack_from(data, pos)[0]
         pos += 4
-        return data[pos:pos+size], pos+size
+        return data[pos : pos + size], pos + size
 
     @classmethod
     def _write_utf(cls, text):
-        encoded_text = text.encode('utf-8')
+        encoded_text = text.encode("utf-8")
         size = len(encoded_text)
         result = b2.pack(size)
         result += encoded_text
@@ -136,16 +209,18 @@ class AbstractKeystore(object):
         result += data
         return result
 
-class AbstractKeystoreEntry(object):
+
+class AbstractKeystoreEntry:
     """Abstract superclass for keystore entries."""
+
     def __init__(self, **kwargs):
-        super(AbstractKeystoreEntry, self).__init__()
-        self.store_type = kwargs.get("store_type")
+        super().__init__()
+        self.store_type: Any = kwargs.get("store_type")
         self.alias = kwargs.get("alias")
         self.timestamp = kwargs.get("timestamp")
 
     @classmethod
-    def new(cls, alias):
+    def new(cls, alias: Any, *args: Any, **kwargs: Any) -> Any:
         """
         Helper function to create a new KeyStoreEntry.
         """
@@ -175,14 +250,17 @@ class AbstractKeystoreEntry(object):
         """
         raise NotImplementedError("Abstract method")
 
+
 def as_hex(ba):
-    return "".join("{:02x}".format(b) for b in bytearray(ba))
+    return "".join(f"{b:02x}" for b in bytearray(ba))
+
 
 def as_pem(der_bytes, type):
-    result = "-----BEGIN %s-----\n" % type
-    result += "\n".join(textwrap.wrap(base64.b64encode(der_bytes).decode('ascii'), 64))
-    result += "\n-----END %s-----" % type
+    result = f"-----BEGIN {type}-----\n"
+    result += "\n".join(textwrap.wrap(base64.b64encode(der_bytes).decode("ascii"), 64))
+    result += f"\n-----END {type}-----"
     return result
+
 
 def bitstring_to_bytes(bitstr):
     """
@@ -191,26 +269,30 @@ def bitstring_to_bytes(bitstr):
     """
     bitlist = list(bitstr)
     bits_missing = (8 - len(bitlist) % 8) % 8
-    bitlist = [0]*bits_missing + bitlist # pad with 0 bits to a multiple of 8
+    bitlist = [0] * bits_missing + bitlist  # pad with 0 bits to a multiple of 8
     result = bytearray()
     for i in range(0, len(bitlist), 8):
         byte = 0
         for j in range(8):
-            byte = (byte << 1) | bitlist[i+j]
+            byte = (byte << 1) | bitlist[i + j]
         result.append(byte)
     return bytes(result)
 
+
 def xor_bytearrays(a, b):
-    return bytearray([x^y for x,y in zip(a,b)])
+    return bytearray([x ^ y for x, y in zip(a, b)])
+
 
 def print_pem(der_bytes, type):
     print(as_pem(der_bytes, type))
+
 
 def pkey_as_pem(pk):
     if pk.algorithm_oid == RSA_ENCRYPTION_OID:
         return as_pem(pk.pkey, "RSA PRIVATE KEY")
     else:
         return as_pem(pk.pkey_pkcs8, "PRIVATE KEY")
+
 
 def strip_pkcs5_padding(m):
     """
@@ -219,6 +301,7 @@ def strip_pkcs5_padding(m):
     """
     return strip_pkcs7_padding(m, 8)
 
+
 def strip_pkcs7_padding(m, block_size):
     """
     Same as PKCS#5 padding, except generalized to block sizes other than 8.
@@ -226,13 +309,14 @@ def strip_pkcs7_padding(m, block_size):
     if len(m) < block_size or len(m) % block_size != 0:
         raise BadPaddingException("Unable to strip padding: invalid message length")
 
-    m = bytearray(m) # py2/3 compatibility: always returns individual indexed elements as ints
+    m = bytearray(m)  # py2/3 compatibility: always returns individual indexed elements as ints
     last_byte = m[-1]
     # the <last_byte> bytes of m must all have value <last_byte>, otherwise something's wrong
-    if (last_byte <= 0 or last_byte > block_size) or (m[-last_byte:] != bytearray([last_byte])*last_byte):
+    if (last_byte <= 0 or last_byte > block_size) or (m[-last_byte:] != bytearray([last_byte]) * last_byte):
         raise BadPaddingException("Unable to strip padding: invalid padding found")
 
-    return bytes(m[:-last_byte]) # back to 'str'/'bytes'
+    return bytes(m[:-last_byte])  # back to 'str'/'bytes'
+
 
 def add_pkcs7_padding(m, block_size):
     if block_size <= 0 or block_size > 255:
@@ -240,5 +324,5 @@ def add_pkcs7_padding(m, block_size):
 
     m = bytearray(m)
     num_padding_bytes = block_size - (len(m) % block_size)
-    m = m + bytearray([num_padding_bytes]*num_padding_bytes)
+    m = m + bytearray([num_padding_bytes] * num_padding_bytes)
     return bytes(m)

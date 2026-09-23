@@ -1,42 +1,44 @@
 #!/usr/bin/env python
 # vim: set et ai ts=4 sts=4 sw=4:
-from __future__ import print_function
-import sys, base64, textwrap
-import logging
-import jks
-import datetime
 import base64
-from jks.util import pkey_as_pem, as_pem, as_hex, print_pem
+import datetime
 from argparse import ArgumentParser
 
+import jks
+from jks.util import as_pem, pkey_as_pem
+
+
 def get_entry_metadata(entry):
-    result = "Alias: %s\n" % entry.alias
-    result += "  Type: %s\n" % type(entry).__name__
-    result += "  Timestamp: %s\n" % datetime.datetime.utcfromtimestamp(entry.timestamp//1000).strftime('%Y-%m-%dT%H:%M:%SZ')
+    result = f"Alias: {entry.alias}\n"
+    result += f"  Type: {type(entry).__name__}\n"
+    result += "  Timestamp: {}\n".format(
+        datetime.datetime.fromtimestamp(entry.timestamp // 1000, tz=datetime.timezone.utc).strftime(
+            "%Y-%m-%dT%H:%M:%SZ"
+        )
+    )
 
     if entry.is_decrypted():
         if isinstance(entry, jks.PrivateKeyEntry):
-            result += "  Algorithm OID: %s\n" % (entry.algorithm_oid,)
-            result += "  Certificate chain: %d certificate(s)\n" % len(entry.cert_chain)
+            result += f"  Algorithm OID: {entry.algorithm_oid}\n"
+            result += f"  Certificate chain: {len(entry.cert_chain)} certificate(s)\n"
         if isinstance(entry, jks.SecretKeyEntry):
-            result += "  Algorithm: %s\n" % (entry.algorithm,)
-            result += "  Key size: %d bits\n" % (entry.key_size,)
-        if isinstance(entry, jks.BksKeyEntry) or \
-           isinstance(entry, jks.BksSealedKeyEntry):
-            result += "  Key type: %s\n" % jks.bks.BksKeyEntry.type2str(entry.type)
-            result += "  Key format: %s\n" % (entry.format,)
-            result +="  Key algorithm: %s\n" % (entry.algorithm,)
+            result += f"  Algorithm: {entry.algorithm}\n"
+            result += f"  Key size: {entry.key_size} bits\n"
+        if isinstance(entry, jks.BksKeyEntry) or isinstance(entry, jks.BksSealedKeyEntry):
+            result += f"  Key type: {jks.bks.BksKeyEntry.type2str(entry.type)}\n"
+            result += f"  Key format: {entry.format}\n"
+            result += f"  Key algorithm: {entry.algorithm}\n"
             if entry.type in [jks.bks.KEY_TYPE_PRIVATE, jks.bks.KEY_TYPE_PUBLIC]:
-                result += "  Key algorithm OID: %s\n" % (entry.algorithm_oid,)
+                result += f"  Key algorithm OID: {entry.algorithm_oid}\n"
             elif entry.type == jks.bks.KEY_TYPE_SECRET:
-                result += "  Key size: %d bits\n" % (entry.key_size,)
-        if isinstance(entry, jks.TrustedCertEntry) or \
-           isinstance(entry, jks.bks.TrustedCertEntry):
-            result += "  Certificate type: %s\n" % (entry.type,)
+                result += f"  Key size: {entry.key_size} bits\n"
+        if isinstance(entry, jks.TrustedCertEntry) or isinstance(entry, jks.bks.TrustedCertEntry):
+            result += f"  Certificate type: {entry.type}\n"
     else:
         result += "  <not yet decrypted>\n"
 
     return result
+
 
 def get_entry_bits(entry):
     if isinstance(entry, jks.PrivateKeyEntry):
@@ -48,8 +50,7 @@ def get_entry_bits(entry):
     if isinstance(entry, jks.SecretKeyEntry):
         return base64.b64encode(entry.key)
 
-    if isinstance(entry, jks.bks.BksKeyEntry) or \
-       isinstance(entry, jks.bks.BksSealedKeyEntry):
+    if isinstance(entry, jks.bks.BksKeyEntry) or isinstance(entry, jks.bks.BksSealedKeyEntry):
         if entry.type == jks.bks.KEY_TYPE_PRIVATE:
             result = pkey_as_pem(entry)
             for c in entry.cert_chain:
@@ -63,19 +64,36 @@ def get_entry_bits(entry):
     if isinstance(entry, jks.bks.BksSecretKeyEntry):
         return base64.b64encode(entry.key)
 
-    if isinstance(entry, jks.TrustedCertEntry) or \
-       isinstance(entry, jks.bks.TrustedCertEntry):
+    if isinstance(entry, jks.TrustedCertEntry) or isinstance(entry, jks.bks.TrustedCertEntry):
         return as_pem(entry.cert, "CERTIFICATE")
+
 
 if __name__ == "__main__":
     parser = ArgumentParser(description="Utility for reading Java keystores.")
     parser.add_argument("keystore_file")
     parser.add_argument("keystore_password")
-    parser.add_argument("--type", default="jks", choices=["jks", "jceks", "bks", "uber"], help="The type of input keystore. Defaults to 'jks'.")
+    parser.add_argument(
+        "--type",
+        default="jks",
+        choices=["jks", "jceks", "bks", "uber"],
+        help="The type of input keystore. Defaults to 'jks'.",
+    )
 
     group = parser.add_mutually_exclusive_group()
-    group.add_argument("-l", "--list", action="store_true", default=True, help="Print a list of entries/aliases in the keystore and some metadata about each one.")
-    group.add_argument("-x", "--extract", metavar="ALIAS", dest="extract_alias", help="Extract the relevant key and/or certificates for the given alias and print them in the PEM format.")
+    group.add_argument(
+        "-l",
+        "--list",
+        action="store_true",
+        default=True,
+        help="Print a list of entries/aliases in the keystore and some metadata about each one.",
+    )
+    group.add_argument(
+        "-x",
+        "--extract",
+        metavar="ALIAS",
+        dest="extract_alias",
+        help="Extract the relevant key and/or certificates for the given alias and print them in the PEM format.",
+    )
     args = parser.parse_args()
 
     args.type = args.type.lower()
@@ -96,6 +114,5 @@ if __name__ == "__main__":
         print(get_entry_bits(entry))
 
     elif args.list:
-        for alias, entry in ks.entries.items():
+        for _alias, entry in ks.entries.items():
             print(get_entry_metadata(entry))
-
