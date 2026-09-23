@@ -64,10 +64,12 @@ Reading a JKS or JCEKS keystore and dumping out its contents in the PEM format:
 import sys, base64, textwrap
 import jks
 
+
 def print_pem(der_bytes, type):
     print("-----BEGIN %s-----" % type)
-    print("\r\n".join(textwrap.wrap(base64.b64encode(der_bytes).decode('ascii'), 64)))
+    print("\r\n".join(textwrap.wrap(base64.b64encode(der_bytes).decode("ascii"), 64)))
     print("-----END %s-----" % type)
+
 
 ks = jks.KeyStore.load("keystore.jks", "XXXXXXXX")
 # if any of the keys in the store use a password that is not the same as the store password:
