@@ -5,7 +5,7 @@ purejks uses [semantic versioning](https://semver.org).
 
 v1.0.0
 ------
-*(unreleased)*
+*(September 23, 2026)*
 
 First release of the purejks fork, based on PyJKS master (20.0.1dev).
 
